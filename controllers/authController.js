@@ -103,6 +103,60 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
+// Update user
+exports.updateUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { fullName, email, mobileNumber } = req.body;
+
+    // Validate required fields
+    if (!fullName || !email || !mobileNumber) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    // Check if user exists
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Check if email or mobileNumber is already taken by another user
+    const existingUser = await User.findOne({
+      _id: { $ne: id },
+      $or: [{ email }, { mobileNumber }],
+    });
+
+    if (existingUser) {
+      return res.status(409).json({ 
+        message: 'Email or mobile number already exists' 
+      });
+    }
+
+    // Update user
+    user.fullName = fullName;
+    user.email = email;
+    user.mobileNumber = mobileNumber;
+
+    await user.save();
+
+    return res.status(200).json({
+      message: 'User updated successfully',
+      user: {
+        id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        mobileNumber: user.mobileNumber,
+      },
+    });
+  } catch (err) {
+    console.error('Update user error:', err);
+    if (err.name === 'CastError') {
+      return res.status(400).json({ message: 'Invalid user ID' });
+    }
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
 const generateToken = (user) => {
   const payload = {
     id: user._id,

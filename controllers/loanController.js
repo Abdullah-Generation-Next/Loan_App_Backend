@@ -123,3 +123,80 @@ exports.getAllLoans = async (req, res) => {
     return res.status(500).json({ message: 'Server error' });
   }
 };
+
+// Update loan (works with or without authentication for admin panel)
+exports.updateLoan = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      fullName,
+      mobileNumber,
+      email,
+      loanAmount,
+      loanDurationMonths,
+      loanPurpose,
+      employmentType,
+      monthlyIncome,
+      status,
+    } = req.body;
+
+    // Validate required fields
+    if (
+      !fullName ||
+      !mobileNumber ||
+      !email ||
+      !loanAmount ||
+      !loanDurationMonths ||
+      !loanPurpose ||
+      !employmentType ||
+      !monthlyIncome
+    ) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    // Check if loan exists
+    const loan = await Loan.findById(id);
+    if (!loan) {
+      return res.status(404).json({ message: 'Loan not found' });
+    }
+
+    // Optional: Check if user owns this loan (only if authenticated)
+    const userId = req.user?.id;
+    if (userId && loan.user && loan.user.toString() !== userId) {
+      // Only enforce ownership check if user is authenticated
+      // Admin panel can update any loan without this check
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    // Update loan fields
+    loan.fullName = fullName;
+    loan.mobileNumber = mobileNumber;
+    loan.email = email;
+    loan.loanAmount = loanAmount;
+    loan.loanDurationMonths = loanDurationMonths;
+    loan.loanPurpose = loanPurpose;
+    loan.employmentType = employmentType;
+    loan.monthlyIncome = monthlyIncome;
+    
+    // Update status if provided
+    if (status && ['PENDING', 'APPROVED', 'REJECTED'].includes(status.toUpperCase())) {
+      loan.status = status.toUpperCase();
+    }
+
+    await loan.save();
+
+    // Populate user data in response
+    await loan.populate('user', 'fullName email mobileNumber');
+
+    return res.status(200).json({
+      message: 'Loan updated successfully',
+      loan,
+    });
+  } catch (err) {
+    console.error('Update loan error:', err);
+    if (err.name === 'CastError') {
+      return res.status(400).json({ message: 'Invalid loan ID' });
+    }
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
