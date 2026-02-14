@@ -13,7 +13,7 @@ connectDB();
 // CORS Middleware - Allow frontend proxy
 app.use(
   cors({
-    origin: ['http://localhost:5173','http://localhost:5174',process.env.FRONTEND_URI],
+    origin: ['http://localhost:5173','http://localhost:5174',process.env.FRONTEND_URI,process.env.ADMIN_URI],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
