@@ -13,12 +13,26 @@ connectDB();
 // CORS Middleware - Allow frontend proxy
 app.use(
   cors({
-    origin: ['http://localhost:5173','http://localhost:5174',process.env.FRONTEND_URI,process.env.ADMIN_URI],
+    origin: (origin, callback) => {
+      const allowedOrigins = [
+        'http://localhost:5173',
+        'http://localhost:5174',
+        process.env.FRONTEND_URI,
+        process.env.ADMIN_URI,
+      ];
+
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
+
 
 // Middleware
 app.use(express.json());
